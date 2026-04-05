@@ -1,73 +1,33 @@
-function explainError(errorMsg) {
+const pythonErrors = require("../errors/pythonErrors");
+const jsErrors = require("../errors/javascriptErrors");
+const javaErrors = require("../errors/javaErrors");
+const cppErrors = require("../errors/cppErrors");
+
+function findError(errorMsg, lang = "en", language = "python") {
   errorMsg = errorMsg.toLowerCase();
+  language = language.toLowerCase(); // ✅ FIX HERE
 
-  // Python Errors
-  if (errorMsg.includes("syntaxerror")) {
-    return `❌ Syntax Error
+  let db = [];
 
-📌 Problem:
-ඔයාගේ code syntax වැරදි
+  if (language === "python") db = pythonErrors;
+  else if (language === "javascript") db = jsErrors;
+  else if (language === "java") db = javaErrors;
+  else if (language === "cpp" || language === "c++") db = cppErrors; // ✅ FIX HERE
 
-💡 Why:
-Python syntax rules follow කරලා නෑ
-
-✅ Fix:
-- brackets () check කරන්න
-- colon : දාන්න (if, for, function වලදී)
-`;
+  const error = db.find(e =>
+  e.patterns?.some(p => errorMsg.includes(p))
+);
+  if (!error) {
+    return {
+      message: lang === "si" ? "❌ Unknown error" : "❌ Unknown error",
+      fix: lang === "si" ? "Code එක check කරන්න" : "Check your code"
+    };
   }
 
-  if (errorMsg.includes("nameerror")) {
-    return `❌ Name Error
-
-📌 Problem:
-variable එක define කරලා නෑ
-
-💡 Why:
-Python unknown variable එකක් හම්බ වුණා
-
-✅ Fix:
-x = 10 වගේ value assign කරන්න`;
-  }
-
-  // Java Errors
-  if (errorMsg.includes("cannot find symbol")) {
-    return `❌ Java Error
-
-📌 Problem:
-variable/method එක හඳුනාගන්න බෑ
-
-✅ Fix:
-variable declare කරලා බලන්න`;
-  }
-
-  if (errorMsg.includes("incompatible types")) {
-    return `❌ Type Error
-
-📌 Problem:
-data type mismatch
-
-💡 Example:
-int a = "10" ❌
-
-✅ Fix:
-int a = 10 ✔`;
-  }
-
-  // C++ Errors
-  if (errorMsg.includes("was not declared")) {
-    return `❌ C++ Error
-
-📌 Problem:
-variable එක declare කරලා නෑ
-
-✅ Fix:
-int x; වගේ declare කරන්න`;
-  }
-
-  return `❌ Unknown Error
-
-👉 code එක carefully check කරන්න`;
+  return {
+    message: error.message[lang],
+    fix: error.fix[lang]
+  };
 }
 
-module.exports = { explainError };
+module.exports = { findError };

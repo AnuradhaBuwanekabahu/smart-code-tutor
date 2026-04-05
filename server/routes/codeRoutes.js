@@ -2,31 +2,68 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const { exec } = require("child_process");
-const explainError = require("../utils/gemini");
+const { findError } = require("../utils/errorHelper");
 
 router.post("/run", async (req, res) => {
   const { code, language, aiLanguage } = req.body;
 
-  let fileName = "temp.py";
-  let command = "python temp.py";
+  let fileName;
+  let command;
 
-  // only python for now (clean version)
+  // Python
+  if (language === "python") {
+    fileName = "temp.py";
+    command = `python ${fileName}`;
+  }
+
+  // JavaScript
+  else if (language === "javascript") {
+    fileName = "temp.js";
+    command = `node ${fileName}`;
+  }
+
+  // Java
+  else if (language === "java") {
+    fileName = "Temp.java";
+    command = `javac ${fileName} && java Temp`;
+  }
+
+  // C++
+  else if (language === "cpp") {
+    fileName = "temp.cpp";
+    command = `g++ ${fileName} -o temp.exe && temp.exe`;
+  }
+
+  else {
+    return res.json({
+      output: "Invalid language",
+      explanation: "",
+      fix: "",
+      error: true
+    });
+  }
+
+  // write file AFTER deciding language
   fs.writeFileSync(fileName, code);
 
-  exec(command, async (error, stdout, stderr) => {
+  exec(command, (error, stdout, stderr) => {
     if (error) {
-      const explanation = await explainError(stderr, aiLanguage);
+      const fullError = stderr || error.message;
+
+      const result = findError(fullError, aiLanguage, language);
 
       return res.json({
-        output: stderr,
-        explanation,
+        output: fullError,
+        explanation: result.message,
+        fix: result.fix,
         error: true
       });
     }
 
     res.json({
-      output: stdout,
+      output: stdout || "✅ Program ran successfully",
       explanation: "✅ No errors",
+      fix: "",
       error: false
     });
   });
